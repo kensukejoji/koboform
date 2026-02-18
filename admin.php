@@ -141,8 +141,17 @@ $baseUrl = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://') . $_SERVER['HTTP_
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理画面</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+#aiLoadingOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; flex-direction:column; align-items:center; justify-content:center; }
+#aiLoadingOverlay.active { display:flex; }
+.spinner { width:56px; height:56px; border:5px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.progress-bar-track { width:320px; height:10px; background:rgba(255,255,255,0.2); border-radius:9999px; overflow:hidden; margin-top:20px; }
+.progress-bar-fill { height:100%; width:0%; background:#a855f7; border-radius:9999px; transition:width 0.4s ease; }
+</style>
 <script>
 function copyUrl(url) { navigator.clipboard.writeText(url).then(()=>alert('URLをコピーしました')); }
+
 function openRegenModal(id, name, theme, region) {
     document.getElementById('regenId').value = id;
     document.getElementById('regenName').value = name;
@@ -150,6 +159,47 @@ function openRegenModal(id, name, theme, region) {
     document.getElementById('regenRegion').value = region;
     document.getElementById('regenModal').classList.remove('hidden');
 }
+
+function showAiLoading(messageEl) {
+    const overlay = document.getElementById('aiLoadingOverlay');
+    overlay.classList.add('active');
+    // プログレスバーを約15秒かけて85%まで進める
+    const fill = document.getElementById('aiProgressFill');
+    const msg  = document.getElementById('aiLoadingMsg');
+    if (messageEl) msg.textContent = messageEl;
+    let pct = 0;
+    const steps = [
+        {target:20, label:'AIに接続中...'},
+        {target:45, label:'申請書の文案を生成中...'},
+        {target:65, label:'予算計画を作成中...'},
+        {target:80, label:'データを整理中...'},
+        {target:88, label:'もうすぐ完了...'},
+    ];
+    let si = 0;
+    const interval = setInterval(() => {
+        if (si < steps.length) {
+            const step = steps[si];
+            if (pct < step.target) {
+                pct = Math.min(pct + 1, step.target);
+                fill.style.width = pct + '%';
+                msg.textContent = step.label;
+            } else { si++; }
+        }
+    }, 180);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 新規発行フォーム（テーマがあればAI生成が走る）
+    document.querySelector('form[method="post"]:not(#regenForm)').addEventListener('submit', function() {
+        const theme = this.querySelector('[name="create_theme"]').value.trim();
+        if (theme) showAiLoading('申請書の下書きを生成中...');
+    });
+    // 再生成フォーム
+    document.getElementById('regenForm').addEventListener('submit', function() {
+        document.getElementById('regenModal').classList.add('hidden');
+        showAiLoading('AI再生成中...');
+    });
+});
 </script>
 </head>
 <body class="bg-gray-50 min-h-screen p-6">
@@ -216,12 +266,20 @@ function openRegenModal(id, name, theme, region) {
     </div>
 </div>
 
+<!-- AIローディングオーバーレイ -->
+<div id="aiLoadingOverlay">
+    <div class="spinner"></div>
+    <p id="aiLoadingMsg" class="text-white font-bold mt-5 text-base">AI生成中...</p>
+    <div class="progress-bar-track"><div id="aiProgressFill" class="progress-bar-fill"></div></div>
+    <p class="text-white text-xs mt-3 opacity-60">通常10〜20秒かかります。しばらくお待ちください。</p>
+</div>
+
 <!-- 再生成モーダル -->
 <div id="regenModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
         <h2 class="text-lg font-bold mb-4 text-purple-900">🤖 AI再生成</h2>
         <p class="text-xs text-gray-500 mb-4">指定したテーマで申請書の内容を再生成し、上書き保存します。</p>
-        <form method="post">
+        <form method="post" id="regenForm">
             <input type="hidden" name="regenerate_id" id="regenId">
             <div class="mb-4">
                 <label class="block text-sm font-bold mb-1">大学名</label>
