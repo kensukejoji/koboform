@@ -2,9 +2,17 @@
 // index.php - 大学入力フォーム
 $id = $_GET['id'] ?? '';
 if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
-    // IDがない場合は管理者画面へのリンクを表示（または404）
     echo '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h1>無効なURLです</h1><p>正しいURLにアクセスしてください。</p><p><a href="admin.php">管理者ログインはこちら</a></p></div>';
     exit;
+}
+require_once 'db_config.php';
+$stmtMenu = $pdo->prepare("SELECT data FROM universities WHERE id = ?");
+$stmtMenu->execute([$id]);
+$uniRow = $stmtMenu->fetch();
+$pageMenu = 'menu1';
+if ($uniRow) {
+    $uniData = json_decode($uniRow['data'], true);
+    $pageMenu = $uniData['_menu'] ?? 'menu1';
 }
 ?>
 <!DOCTYPE html>
@@ -78,11 +86,19 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
   <!-- タブナビ -->
   <div class="max-w-6xl mx-auto px-4 pt-3 no-print">
     <div class="flex gap-1 overflow-x-auto">
+      <?php if ($pageMenu === 'menu2'): ?>
+      <button class="tab-btn active whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-orange-700" onclick="showTab('s21')">様式1-1<br><span class="font-normal">提出状</span></button>
+      <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s22')">様式1-2<br><span class="font-normal">基本情報</span></button>
+      <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s23')">事業計画書<br><span class="font-normal">体制・プログラム</span></button>
+      <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s3')">申請経費<br><span class="font-normal">様式3</span></button>
+      <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s24')">伴走支援<br><span class="font-normal">様式4</span></button>
+      <?php else: ?>
       <button class="tab-btn active whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-blue-800" onclick="showTab('s11')">様式1-1<br><span class="font-normal">提出状</span></button>
       <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s12')">様式1-2<br><span class="font-normal">基本情報</span></button>
       <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s13')">様式1-3<br><span class="font-normal">実施委員会</span></button>
       <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s2')">様式2<br><span class="font-normal">企画提案書</span></button>
       <button class="tab-btn whitespace-nowrap text-xs px-4 py-2 rounded-t border font-bold border-gray-300" onclick="showTab('s3')">様式3<br><span class="font-normal">申請経費</span></button>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -364,11 +380,191 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
         </table>
       </div>
       <div class="flex justify-between mt-5">
+        <?php if ($pageMenu === 'menu2'): ?>
+        <button onclick="showTab('s23')" class="bg-gray-400 text-white px-5 py-2 rounded font-bold text-sm hover:bg-gray-500">← 前へ</button>
+        <button onclick="showTab('s24')" class="bg-blue-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-blue-700">次へ →</button>
+        <?php else: ?>
         <button onclick="showTab('s2')" class="bg-gray-400 text-white px-5 py-2 rounded font-bold text-sm hover:bg-gray-500">← 前へ</button>
+        <button onclick="saveData(); showOutput();" class="bg-green-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-green-700">💾 保存して申請様式を出力 →</button>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <?php if ($pageMenu === 'menu2'): ?>
+  <!-- ==================== メニュー②フォーム ==================== -->
+
+  <!-- 様式1-1 提出状 -->
+  <div id="s21" class="form-section active max-w-6xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-b rounded-r shadow p-6">
+      <h2 class="text-base font-bold text-orange-800 border-b-2 border-orange-800 pb-2 mb-4">様式１-１　企画提案書提出状</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">提出年月日 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label><input type="date" id="s21_date" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">大学等名 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label><input type="text" id="s21_daigakuname" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：○○大学"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">学長等氏名 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label><input type="text" id="s21_gakucho" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：○○ ○○"></div>
+      </div>
+      <div class="flex justify-end mt-5"><button onclick="showTab('s22')" class="bg-blue-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-blue-700">次へ →</button></div>
+    </div>
+  </div>
+
+  <!-- 様式1-2 基本情報 -->
+  <div id="s22" class="form-section max-w-6xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-b rounded-r shadow p-6 space-y-5">
+      <h2 class="text-base font-bold text-orange-800 border-b-2 border-orange-800 pb-2 mb-4">様式１-２　基本情報</h2>
+      <div><label class="block text-sm font-bold text-gray-700 mb-1">１. 実施主体 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label><input type="text" id="s22_jisshisyutai" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：○○大学（設置者：○○）"></div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">２. 事業者（ふりがな）<span class="badge-uni px-1 rounded text-xs ml-1">🎓</span></label><input type="text" id="s22_jigyosha_furi" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">氏名</label><input type="text" id="s22_jigyosha_name" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">所属・職名</label><input type="text" id="s22_jigyosha_shoku" class="w-full border rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">３. 申請者（ふりがな）<span class="badge-uni px-1 rounded text-xs ml-1">🎓</span></label><input type="text" id="s22_shinseisha_furi" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">氏名</label><input type="text" id="s22_shinseisha_name" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">所属・職名</label><input type="text" id="s22_shinseisha_shoku" class="w-full border rounded px-3 py-2 text-sm"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">４. 事業責任者（ふりがな）<span class="badge-uni px-1 rounded text-xs ml-1">🎓</span></label><input type="text" id="s22_sekinin_furi" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">氏名</label><input type="text" id="s22_sekinin_name" class="w-full border rounded px-3 py-2 text-sm"></div>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">所属・職名</label><input type="text" id="s22_sekinin_shoku" class="w-full border rounded px-3 py-2 text-sm"></div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">５〜７. プログラム情報</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">プログラム名（事業名）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><input type="text" id="s22_jigyomei" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：産業DX人材育成VRリスキリングプログラム"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">プログラムの領域（メイン）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><input type="text" id="s22_ryoiki1_main" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：DXプロ、介護、モビリティ等"></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">プログラムの領域（サブ）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><input type="text" id="s22_ryoiki1_sub" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：VR活用技能習得"></div>
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-1">事業のポイント（400字以内）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label>
+          <textarea id="s22_point" rows="5" class="w-full border rounded px-3 py-2 text-sm" oninput="updateCounter(this,'counter22p')"></textarea>
+          <div id="counter22p" class="char-counter text-right">0 / 400字</div>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">８. 事業経費（千円）</h3>
+        <div class="grid grid-cols-4 gap-3">
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">事業規模（総事業費）</label><input type="number" id="s22_sogaku" class="w-full border rounded px-3 py-2 text-sm" placeholder="0"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">補助金申請額（上限39,500）</label><input type="number" id="s22_hojokinn" class="w-full border rounded px-3 py-2 text-sm" placeholder="0"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">大学等負担額</label><input type="number" id="s22_kikan_futan" class="w-full border rounded px-3 py-2 text-sm" placeholder="0"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">受講料収入見込み</label><input type="number" id="s22_jukoryosyu" class="w-full border rounded px-3 py-2 text-sm" placeholder="0"></div>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">９. 事業協働機関</h3>
+        <div class="space-y-2">
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">産業界・企業・経済団体<span class="badge-jg px-1 rounded text-xs ml-1">🏢 JG</span></label><input type="text" id="s22_kyodo_kigyo" class="w-full border rounded px-3 py-2 text-sm" placeholder="株式会社ジョリーグッド（VRコンテンツ制作・プラットフォーム提供）、受講生派遣企業等"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">教育機関<span class="badge-uni px-1 rounded text-xs ml-1">🎓</span></label><input type="text" id="s22_kyodo_kyo" class="w-full border rounded px-3 py-2 text-sm" placeholder="連携大学等があれば"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">その他</label><input type="text" id="s22_kyodo_other" class="w-full border rounded px-3 py-2 text-sm" placeholder="行政・業界団体等"></div>
+        </div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">１０. 学生・教職員数</h3>
+        <input type="text" id="s22_daigaku_name" class="border rounded px-3 py-2 text-sm mb-2 w-64" placeholder="大学等名">
+        <div class="overflow-x-auto"><table class="text-sm border-collapse w-full">
+          <thead><tr class="bg-gray-100"><th class="border px-2 py-1"></th><th class="border px-2 py-1">入学定員</th><th class="border px-2 py-1">全学生数</th><th class="border px-2 py-1">収容定員</th><th class="border px-2 py-1">教員数</th><th class="border px-2 py-1">職員数</th></tr></thead>
+          <tbody>
+            <tr><td class="border px-2 py-1 font-bold text-xs">学部</td><td class="border px-1 py-1"><input type="number" id="s22_gakubu_nyugaku" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_gakubu_zengakusei" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_gakubu_shuyoteiin" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_kyoinsuu" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_shokuinsuu" class="w-full text-sm px-1"></td></tr>
+            <tr><td class="border px-2 py-1 font-bold text-xs">大学院</td><td class="border px-1 py-1"><input type="number" id="s22_daigakuin_nyugaku" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_daigakuin_zengakusei" class="w-full text-sm px-1"></td><td class="border px-1 py-1"><input type="number" id="s22_daigakuin_shuyoteiin" class="w-full text-sm px-1"></td><td class="border px-2 py-1 text-center text-gray-400">―</td><td class="border px-2 py-1 text-center text-gray-400">―</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="border-t pt-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">担当部署・連絡先<span class="badge-uni px-1 rounded text-xs ml-1">🎓</span></h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">取組を実施する組織名</label><input type="text" id="s22_tanto_busyo" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：リスキリング推進室"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">所在地</label><input type="text" id="s22_shozaichi" class="w-full border rounded px-3 py-2 text-sm" placeholder="〒000-0000 都道府県..."></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-2">
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">担当者（ふりがな）</label><input type="text" id="s22_tanto_furi" class="w-full border rounded px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">担当者氏名</label><input type="text" id="s22_tanto_name" class="w-full border rounded px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">所属・職名</label><input type="text" id="s22_tanto_shoku" class="w-full border rounded px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">電話番号</label><input type="text" id="s22_tanto_tel" class="w-full border rounded px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">緊急連絡先</label><input type="text" id="s22_tanto_emg" class="w-full border rounded px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-bold text-gray-700 mb-1">メールアドレス</label><input type="text" id="s22_tanto_mail1" class="w-full border rounded px-3 py-2 text-sm"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-between mt-5">
+        <button onclick="showTab('s21')" class="bg-gray-400 text-white px-5 py-2 rounded font-bold text-sm hover:bg-gray-500">← 前へ</button>
+        <button onclick="showTab('s23')" class="bg-blue-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-blue-700">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 事業計画書（様式3 PPT相当） -->
+  <div id="s23" class="form-section max-w-6xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-b rounded-r shadow p-6 space-y-5">
+      <h2 class="text-base font-bold text-orange-800 border-b-2 border-orange-800 pb-2 mb-4">事業計画書（様式３）</h2>
+
+      <div><label class="block text-sm font-bold text-gray-700 mb-1">【大学全体の体制】経営層参画・全学方針・担当部署 <span class="badge-both px-1 rounded text-xs">🤝 共同</span></label><textarea id="s23_taisei" rows="4" class="w-full border rounded px-3 py-2 text-sm" placeholder="学長のリーダーシップのもと、全学的なリスキリング推進方針を策定。専任コーディネーター配置予定..."></textarea></div>
+
+      <div class="border-t pt-4"><h3 class="text-sm font-bold text-orange-800 mb-2">企業/エコシステムとの連携（必須要件）</h3>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">受講生派遣確約・議論体制・効果調査・学修者意欲向上の工夫 <span class="badge-both px-1 rounded text-xs">🤝</span></label><textarea id="s23_kigyorenkei" rows="5" class="w-full border rounded px-3 py-2 text-sm" placeholder="●社から受講生派遣の確約を取得済み。四半期ごとに産学協働会議を開催..."></textarea></div>
+      </div>
+
+      <div class="border-t pt-4"><h3 class="text-sm font-bold text-orange-800 mb-2">プログラム開発・実施</h3>
+        <div><label class="block text-sm font-bold text-gray-700 mb-1">産業成長への貢献・VR実習設計・170人達成計画・デジタルバッジ <span class="badge-both px-1 rounded text-xs">🤝</span></label><textarea id="s23_program" rows="6" class="w-full border rounded px-3 py-2 text-sm" placeholder="当プログラムは〇〇産業の成長に直結する人材育成を目的とし、VRシミュレーション実習と座学を組み合わせた独自設計..."></textarea></div>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">企業ニーズの把握とプログラムへの反映（加点）<span class="badge-jg px-1 rounded text-xs ml-1">🏢</span></label><textarea id="s23_senzai" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="ヒアリング等で把握した企業ニーズ..."></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">連携企業を増やす工夫（加点）<span class="badge-jg px-1 rounded text-xs ml-1">🏢</span></label><textarea id="s23_kigyozoukyou" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="業界団体・商工会議所を通じた展開..."></textarea></div>
+        </div>
+        <div class="mt-3">
+          <label class="block text-sm font-bold text-gray-700 mb-1">【P4】教育プログラム一覧 <span class="badge-both px-1 rounded text-xs">🤝 共同</span></label>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse"><thead><tr class="bg-orange-700 text-white"><th class="border px-2 py-1 w-72">プログラム名</th><th class="border px-2 py-1 w-24">対象者</th><th class="border px-2 py-1 w-14">定員</th><th class="border px-2 py-1 w-32">受講料（円）</th><th class="border px-2 py-1">目的・内容</th><th class="border px-2 py-1 w-8">削除</th></tr></thead><tbody id="programTbody2"></tbody></table>
+          </div>
+          <button onclick="addProgramRow2()" class="mt-2 bg-orange-600 text-white text-xs px-3 py-1 rounded hover:bg-orange-700">＋ プログラムを追加</button>
+        </div>
+      </div>
+
+      <div class="border-t pt-4"><h3 class="text-sm font-bold text-orange-800 mb-2">加点要件（現下の課題への対応）</h3>
+        <div class="space-y-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">①就職氷河期世代等の支援</label><textarea id="s23_kadai1" rows="2" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">②地方人材確保のための仕組み構築</label><textarea id="s23_kadai2" rows="2" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">③スキルの可視化・処遇改善</label><textarea id="s23_kadai3" rows="2" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">⑥修士・博士課程への接続</label><textarea id="s23_kadai6" rows="2" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+        </div>
+      </div>
+
+      <div class="border-t pt-4"><h3 class="text-sm font-bold text-orange-800 mb-2">自走化計画</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">自走化目標像（2〜4年後）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><textarea id="s23_jisoka" rows="3" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">財務計画（年度別収支）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><textarea id="s23_jisoka_zaimu" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="2年目：受講料収入〇〇千円、コスト〇〇千円&#10;3年目：〜&#10;4年目：収支均衡〜"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">取組計画（年度別アクション）<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><textarea id="s23_jisoka_plan" rows="3" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+          <div><label class="block text-sm font-bold text-gray-700 mb-1">人員確保計画<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><textarea id="s23_jisoka_jinzai" rows="3" class="w-full border rounded px-3 py-2 text-sm"></textarea></div>
+        </div>
+        <div class="mt-3"><label class="block text-sm font-bold text-gray-700 mb-1">R8年度スケジュール<span class="badge-both px-1 rounded text-xs ml-1">🤝</span></label><textarea id="s23_schedule" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="前期（4〜9月）：体制整備・VRコンテンツ開発・試行実施&#10;後期（10〜3月）：本格実施・効果測定・改善"></textarea></div>
+      </div>
+
+      <div class="flex justify-between mt-5">
+        <button onclick="showTab('s22')" class="bg-gray-400 text-white px-5 py-2 rounded font-bold text-sm hover:bg-gray-500">← 前へ</button>
+        <button onclick="showTab('s3')" class="bg-blue-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-blue-700">次へ（申請経費）→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 伴走支援（様式4） -->
+  <div id="s24" class="form-section max-w-6xl mx-auto px-4 pb-10">
+    <div class="bg-white rounded-b rounded-r shadow p-6 space-y-5">
+      <h2 class="text-base font-bold text-orange-800 border-b-2 border-orange-800 pb-2 mb-4">様式４　伴走支援について</h2>
+      <p class="text-xs text-gray-500">文部科学省からの伴走支援（プログラム改善アドバイス・企業マッチング等）について、期待する内容と解決したい課題を記入してください。</p>
+      <div><label class="block text-sm font-bold text-gray-700 mb-1">伴走支援に期待する内容・解決したい課題 <span class="badge-both px-1 rounded text-xs">🤝 共同</span></label><textarea id="s23_bansosien" rows="8" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：連携企業のマッチング支援、プログラムの質向上に向けたアドバイス..."></textarea></div>
+      <div class="flex justify-between mt-5">
+        <button onclick="showTab('s3')" class="bg-gray-400 text-white px-5 py-2 rounded font-bold text-sm hover:bg-gray-500">← 前へ（申請経費）</button>
         <button onclick="saveData(); showOutput();" class="bg-green-600 text-white px-5 py-2 rounded font-bold text-sm hover:bg-green-700">💾 保存して申請様式を出力 →</button>
       </div>
     </div>
   </div>
+  <?php endif; ?>
+
 </div>
 
 <!-- ===================== OUTPUT PAGE ===================== -->
@@ -411,13 +607,37 @@ const keihiRows = [
 let programs = [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
 let committee = Array.from({length:10}, ()=>({name:'',shoku:'',yakuwari:''}));
 
+const MENU = "<?php echo $pageMenu; ?>";
+const MENU2_FIELD_IDS = [
+  's21_date','s21_daigakuname','s21_gakucho',
+  's22_jisshisyutai','s22_jigyosha_furi','s22_jigyosha_name','s22_jigyosha_shoku',
+  's22_shinseisha_furi','s22_shinseisha_name','s22_shinseisha_shoku',
+  's22_sekinin_furi','s22_sekinin_name','s22_sekinin_shoku',
+  's22_jigyomei','s22_ryoiki1_main','s22_ryoiki1_sub','s22_point',
+  's22_sogaku','s22_hojokinn','s22_kikan_futan','s22_jukoryosyu',
+  's22_kyodo_kigyo','s22_kyodo_kyo','s22_kyodo_other',
+  's22_daigaku_name','s22_gakubu_nyugaku','s22_gakubu_zengakusei','s22_gakubu_shuyoteiin','s22_kyoinsuu','s22_shokuinsuu',
+  's22_daigakuin_nyugaku','s22_daigakuin_zengakusei','s22_daigakuin_shuyoteiin',
+  's22_tanto_busyo','s22_shozaichi','s22_tanto_furi','s22_tanto_name','s22_tanto_shoku','s22_tanto_tel','s22_tanto_emg','s22_tanto_mail1',
+  's23_taisei','s23_kigyorenkei','s23_program','s23_senzai','s23_kigyozoukyou',
+  's23_kadai1','s23_kadai2','s23_kadai3','s23_kadai6',
+  's23_jisoka','s23_jisoka_zaimu','s23_jisoka_plan','s23_jisoka_jinzai','s23_schedule',
+  's23_bansosien',
+];
+let programs2 = [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
+
 // ================================================================
 // INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
   buildKeihiTable();
-  buildCommitteeTable();
-  buildProgramTable();
+  if (MENU === 'menu2') {
+    buildProgramTable2();
+    showTab('s21'); // s11 の active を解除
+  } else {
+    buildCommitteeTable();
+    buildProgramTable();
+  }
   loadData(); // サーバーからロード
   setupAutoSave();
 });
@@ -476,6 +696,25 @@ function buildProgramTable() {
 
 function addProgramRow() { programs.push({name:'',target:'',teiin:'',ryokin:'',naiyou:''}); buildProgramTable(); }
 function removeProgramRow(i) { programs.splice(i,1); buildProgramTable(); }
+
+function buildProgramTable2() {
+  const tbody = document.getElementById('programTbody2');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  programs2.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="border px-1 py-1"><input type="text" class="w-full text-sm px-1 py-0.5" value="${p.name}" oninput="programs2[${i}].name=this.value" placeholder="プログラム名"></td>
+      <td class="border px-1 py-1"><input type="text" class="w-full text-sm px-1 py-0.5" value="${p.target}" oninput="programs2[${i}].target=this.value"></td>
+      <td class="border px-1 py-1"><input type="number" class="w-full text-sm px-1 py-0.5" value="${p.teiin}" oninput="programs2[${i}].teiin=this.value"></td>
+      <td class="border px-1 py-1"><input type="number" class="w-full text-sm px-1 py-0.5" value="${p.ryokin}" oninput="programs2[${i}].ryokin=this.value"></td>
+      <td class="border px-1 py-1"><textarea class="w-full text-sm px-1 py-0.5" rows="2" oninput="programs2[${i}].naiyou=this.value">${p.naiyou}</textarea></td>
+      <td class="border px-1 py-1 text-center"><button onclick="removeProgramRow2(${i})" class="text-red-500 hover:text-red-700 font-bold">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function addProgramRow2() { programs2.push({name:'',target:'',teiin:'',ryokin:'',naiyou:''}); buildProgramTable2(); }
+function removeProgramRow2(i) { programs2.splice(i,1); buildProgramTable2(); }
 
 function buildKeihiTable() {
   const tbody = document.getElementById('keihi_tbody');
@@ -543,7 +782,8 @@ function getUniData(name) {
 
 function gatherData() {
   const fields = {};
-  FIELD_IDS.forEach(id => { const el=document.getElementById(id); if(el) fields[id]=el.value; });
+  const fieldIds = MENU === 'menu2' ? MENU2_FIELD_IDS : FIELD_IDS;
+  fieldIds.forEach(id => { const el=document.getElementById(id); if(el) fields[id]=el.value; });
   const keihi = {};
   keihiRows.forEach(row => {
     keihi[row.id] = {
@@ -554,6 +794,9 @@ function gatherData() {
   });
   const theme = document.getElementById('aiTheme')?.value || '';
   const region = document.getElementById('aiRegion')?.value || '';
+  if (MENU === 'menu2') {
+    return { fields, programs2: JSON.parse(JSON.stringify(programs2)), keihi, _uni: currentUniName, _theme: theme, _region: region, _menu: 'menu2' };
+  }
   return { fields, programs: JSON.parse(JSON.stringify(programs)), committee: JSON.parse(JSON.stringify(committee)), keihi, _uni: currentUniName, _theme: theme, _region: region };
 }
 
@@ -598,16 +841,32 @@ function applyData(data) {
   currentUniName = data._uni || '';
   document.getElementById('formHeader').textContent = `${currentUniName}　入力フォーム`;
 
-  programs = data.programs || [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
-  committee = data.committee || Array.from({length:10},()=>({name:'',shoku:'',yakuwari:''}));
-  buildProgramTable();
-  buildCommitteeTable();
-  if (data.fields) {
-    FIELD_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el && data.fields[id] !== undefined) el.value = data.fields[id];
-    });
+  if (MENU === 'menu2') {
+    programs2 = data.programs2 || [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
+    buildProgramTable2();
+    if (data.fields) {
+      MENU2_FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && data.fields[id] !== undefined) el.value = data.fields[id];
+      });
+    }
+    const el22p = document.getElementById('s22_point');
+    if(el22p) updateCounter(el22p,'counter22p');
+  } else {
+    programs = data.programs || [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
+    committee = data.committee || Array.from({length:10},()=>({name:'',shoku:'',yakuwari:''}));
+    buildProgramTable();
+    buildCommitteeTable();
+    if (data.fields) {
+      FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && data.fields[id] !== undefined) el.value = data.fields[id];
+      });
+    }
+    const el6 = document.getElementById('s12_point');
+    if(el6) updateCounter(el6,'counter6');
   }
+
   if (data.keihi) {
     keihiRows.forEach(row => {
       const k = data.keihi[row.id]; if(!k) return;
@@ -618,9 +877,6 @@ function applyData(data) {
   }
   if (data._theme) document.getElementById('aiTheme').value = data._theme;
   if (data._region) document.getElementById('aiRegion').value = data._region;
-
-  const el6 = document.getElementById('s12_point');
-  if(el6) updateCounter(el6,'counter6');
 }
 
 // ================================================================
@@ -654,11 +910,11 @@ async function runAiGenerate() {
     const res = await fetch('ai_generate.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ theme, region, name: currentUniName })
+      body: JSON.stringify({ theme, region, name: currentUniName, menu: MENU })
     });
     const data = await res.json();
     if(data.error) throw new Error(data.error);
-    
+
     // データを反映
     if(data.fields) {
       Object.keys(data.fields).forEach(k => {
@@ -666,7 +922,15 @@ async function runAiGenerate() {
         if(el) el.value = data.fields[k];
       });
     }
-    if(data.programs) { programs = data.programs; buildProgramTable(); }
+    if (MENU === 'menu2') {
+      if(data.programs2) { programs2 = data.programs2; buildProgramTable2(); }
+      const el22p = document.getElementById('s22_point');
+      if(el22p) updateCounter(el22p,'counter22p');
+    } else {
+      if(data.programs) { programs = data.programs; buildProgramTable(); }
+      const el6 = document.getElementById('s12_point');
+      if(el6) updateCounter(el6,'counter6');
+    }
     if(data.keihi) {
       Object.keys(data.keihi).forEach(k => {
         const row = data.keihi[k];
@@ -675,9 +939,6 @@ async function runAiGenerate() {
       });
       updateKeihiTotal();
     }
-    // 文字カウンター更新
-    const el6 = document.getElementById('s12_point');
-    if(el6) updateCounter(el6,'counter6');
 
     document.getElementById('aiModal').classList.add('hidden');
     showToast('AIによる生成が完了しました ✨');
@@ -720,6 +981,86 @@ function showOutput() {
   const row2 = (label, val1, label2, val2) => `<div class="shoshiki-row"><div class="shoshiki-label">${label}</div><div class="shoshiki-val" style="flex:1">${val1||'&nbsp;'}</div><div class="shoshiki-label">${label2}</div><div class="shoshiki-val" style="flex:1">${val2||'&nbsp;'}</div></div>`;
 
   let html = '';
+
+  if (MENU === 'menu2') {
+    // ===== メニュー②産業成長 出力 =====
+
+    // 様式1-1
+    html += `<div class="shoshiki-box print-page">
+      <div class="shoshiki-title">様式１-１　企画提案書提出状（メニュー②産業成長）</div>
+      ${row('提出年月日', v('s21_date'))}
+      ${row('大学等名', v('s21_daigakuname'))}
+      ${row('学長等氏名', v('s21_gakucho'))}
+    </div>`;
+
+    // 様式1-2
+    html += `<div class="shoshiki-box print-page">
+      <div class="shoshiki-title">様式１-２　基本情報</div>
+      ${row('１. 実施主体', v('s22_jisshisyutai'))}
+      <div class="shoshiki-row"><div class="shoshiki-label">２. 事業者</div><div class="shoshiki-val">${v('s22_jigyosha_furi')} / ${v('s22_jigyosha_name')}　${v('s22_jigyosha_shoku')}</div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">３. 申請者</div><div class="shoshiki-val">${v('s22_shinseisha_furi')} / ${v('s22_shinseisha_name')}　${v('s22_shinseisha_shoku')}</div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">４. 事業責任者</div><div class="shoshiki-val">${v('s22_sekinin_furi')} / ${v('s22_sekinin_name')}　${v('s22_sekinin_shoku')}</div></div>
+      ${row('プログラム名（事業名）', v('s22_jigyomei'))}
+      ${row2('領域（メイン）', v('s22_ryoiki1_main'), '領域（サブ）', v('s22_ryoiki1_sub'))}
+      <div class="shoshiki-row"><div class="shoshiki-label">事業のポイント<br>（400字以内）</div><div class="shoshiki-val">${v('s22_point')}</div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">８. 事業経費（千円）</div><div class="shoshiki-val" style="flex:1">
+        <table class="shoshiki-table w-auto"><tr><th>事業規模（総事業費）</th><th>補助金申請額</th><th>大学等負担額</th><th>受講料収入見込み</th></tr>
+        <tr><td>${v('s22_sogaku')||'―'}千円</td><td>${v('s22_hojokinn')||'―'}千円</td><td>${v('s22_kikan_futan')||'―'}千円</td><td>${v('s22_jukoryosyu')||'―'}千円</td></tr></table>
+      </div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">９. 事業協働機関</div><div class="shoshiki-val" style="flex:1">
+        <div><span class="font-bold text-xs">（産業界）</span> ${v('s22_kyodo_kigyo')}</div>
+        <div><span class="font-bold text-xs">（教育機関）</span> ${v('s22_kyodo_kyo')}</div>
+        <div><span class="font-bold text-xs">（その他）</span> ${v('s22_kyodo_other')}</div>
+      </div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">１０. 学生・教職員数<br>（${v('s22_daigaku_name')}）</div><div class="shoshiki-val" style="flex:1">
+        <table class="shoshiki-table w-auto"><tr><th></th><th>入学定員</th><th>全学生数</th><th>収容定員</th><th>教員数</th><th>職員数</th></tr>
+        <tr><td class="font-bold">学部</td><td>${v('s22_gakubu_nyugaku')||'―'}</td><td>${v('s22_gakubu_zengakusei')||'―'}</td><td>${v('s22_gakubu_shuyoteiin')||'―'}</td><td>${v('s22_kyoinsuu')||'―'}</td><td>${v('s22_shokuinsuu')||'―'}</td></tr>
+        <tr><td class="font-bold">大学院</td><td>${v('s22_daigakuin_nyugaku')||'―'}</td><td>${v('s22_daigakuin_zengakusei')||'―'}</td><td>${v('s22_daigakuin_shuyoteiin')||'―'}</td><td>―</td><td>―</td></tr>
+        </table>
+      </div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">担当部署・連絡先</div><div class="shoshiki-val" style="flex:1">
+        <div><span class="text-xs text-gray-500">組織名：</span>${v('s22_tanto_busyo')}　<span class="text-xs text-gray-500">所在地：</span>${v('s22_shozaichi')}</div>
+        <div>${v('s22_tanto_furi')} / ${v('s22_tanto_name')}　${v('s22_tanto_shoku')}</div>
+        <div>TEL：${v('s22_tanto_tel')}　緊急：${v('s22_tanto_emg')}　mail：${v('s22_tanto_mail1')}</div>
+      </div></div>
+    </div>`;
+
+    // 事業計画書
+    html += `<div class="shoshiki-box print-page">
+      <div class="shoshiki-title">事業計画書（様式３）</div>
+      ${row('大学全体の体制', v('s23_taisei'))}
+      ${row('企業/エコシステムとの連携', v('s23_kigyorenkei'))}
+      ${row('プログラム開発・実施', v('s23_program'))}
+      ${row('企業ニーズの把握と反映（加点）', v('s23_senzai'))}
+      ${row('連携企業を増やす工夫（加点）', v('s23_kigyozoukyou'))}
+      <div class="shoshiki-row"><div class="shoshiki-label">教育プログラム一覧</div><div class="shoshiki-val" style="flex:1">
+        <table class="shoshiki-table w-full"><tr><th style="width:30%">プログラム名</th><th style="width:14%">対象者</th><th style="width:7%">定員</th><th style="width:14%">受講料</th><th>目的・内容</th></tr>
+        ${(data.programs2||[]).map(p=>`<tr><td>${p.name||''}</td><td>${p.target||''}</td><td>${p.teiin||''}名</td><td>¥${p.ryokin||''}</td><td>${p.naiyou||''}</td></tr>`).join('')}
+        </table>
+      </div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">加点要件（課題対応）</div><div class="shoshiki-val" style="flex:1">
+        <div><span class="font-bold text-xs">①就職氷河期世代等：</span>${v('s23_kadai1')}</div>
+        <div><span class="font-bold text-xs">②地方人材確保：</span>${v('s23_kadai2')}</div>
+        <div><span class="font-bold text-xs">③スキルの可視化：</span>${v('s23_kadai3')}</div>
+        <div><span class="font-bold text-xs">⑥修士・博士接続：</span>${v('s23_kadai6')}</div>
+      </div></div>
+      <div class="shoshiki-row"><div class="shoshiki-label">自走化計画</div><div class="shoshiki-val" style="flex:1">
+        <div><span class="font-bold text-xs">目標像：</span>${v('s23_jisoka')}</div>
+        <div><span class="font-bold text-xs">財務計画：</span>${v('s23_jisoka_zaimu')}</div>
+        <div><span class="font-bold text-xs">取組計画：</span>${v('s23_jisoka_plan')}</div>
+        <div><span class="font-bold text-xs">人員確保：</span>${v('s23_jisoka_jinzai')}</div>
+        <div><span class="font-bold text-xs">R8スケジュール：</span>${v('s23_schedule')}</div>
+      </div></div>
+    </div>`;
+
+    // 様式4 伴走支援
+    html += `<div class="shoshiki-box print-page">
+      <div class="shoshiki-title">様式４　伴走支援について</div>
+      ${row('伴走支援に期待する内容・解決したい課題', v('s23_bansosien'))}
+    </div>`;
+
+  } else {
+  // ===== メニュー①地方創生 出力（既存） =====
 
   // 様式1-1
   html += `<div class="shoshiki-box print-page">
@@ -774,7 +1115,7 @@ function showOutput() {
     ${row2('委員数', v('s13_iinsuu')+'名', '開催頻度', v('s13_kaiji')+'回/年')}
     <div class="shoshiki-row"><div class="shoshiki-label">委員会の構成員</div><div class="shoshiki-val" style="flex:1">
       <table class="shoshiki-table w-full"><tr><th style="width:2rem">No.</th><th>氏名</th><th>所属・職名</th><th>役割等</th></tr>
-      ${data.committee.map((m,i)=>`<tr><td class="text-center">${i+1}</td><td>${m.name||''}</td><td>${m.shoku||''}</td><td>${m.yakuwari||''}</td></tr>`).join('')}
+      ${(data.committee||[]).map((m,i)=>`<tr><td class="text-center">${i+1}</td><td>${m.name||''}</td><td>${m.shoku||''}</td><td>${m.yakuwari||''}</td></tr>`).join('')}
       </table>
     </div></div>
   </div>`;
@@ -791,7 +1132,7 @@ function showOutput() {
     </div></div>
     <div class="shoshiki-row"><div class="shoshiki-label">[P4] 教育プログラム一覧</div><div class="shoshiki-val" style="flex:1">
       <table class="shoshiki-table w-full"><tr><th style="width:30%">プログラム名</th><th style="width:14%">対象者</th><th style="width:7%">定員</th><th style="width:14%">受講料</th><th>目的・内容</th></tr>
-      ${data.programs.map(p=>`<tr><td>${p.name||''}</td><td>${p.target||''}</td><td>${p.teiin||''}名</td><td>¥${p.ryokin||''}</td><td>${p.naiyou||''}</td></tr>`).join('')}
+      ${(data.programs||[]).map(p=>`<tr><td>${p.name||''}</td><td>${p.target||''}</td><td>${p.teiin||''}名</td><td>¥${p.ryokin||''}</td><td>${p.naiyou||''}</td></tr>`).join('')}
       </table>
     </div></div>
     ${row('[P3] 活動範囲と体制構築', v('s2_katsudo'))}
@@ -810,7 +1151,9 @@ function showOutput() {
     ${row('デジタルバッジ', v('s2_badge'))}
   </div>`;
 
-  // 様式3
+  } // end else (menu1)
+
+  // 様式3（経費）は両メニュー共通
   let totalH=0, totalF=0;
   const keihiRows2 = keihiRows.map(row => {
     const k = data.keihi[row.id]||{hojo:'',futan:'',naiyou:''};

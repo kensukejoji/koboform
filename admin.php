@@ -49,11 +49,13 @@ if (isset($_POST['create_name'])) {
     $name = trim($_POST['create_name']);
     $theme = trim($_POST['create_theme'] ?? '');
     $region = trim($_POST['create_region'] ?? '');
+    $menu = in_array($_POST['create_menu'] ?? '', ['menu1','menu2']) ? $_POST['create_menu'] : 'menu1';
 
     if ($name) {
         $id = bin2hex(random_bytes(8));
         $initialData = [
             '_uni' => $name,
+            '_menu' => $menu,
             '_theme' => $theme,
             '_region' => $region,
             '_created' => date('c'),
@@ -63,8 +65,10 @@ if (isset($_POST['create_name'])) {
 
         // テーマが入力されていればAI生成を実行
         if ($theme && !empty($GEMINI_API_KEY)) {
-            $prompt  = buildGeminiPrompt($name, $region, $theme);
-            $aiData  = callGeminiApi($prompt);
+            $prompt = $menu === 'menu2'
+                ? buildGeminiPromptMenu2($name, $region, $theme)
+                : buildGeminiPrompt($name, $region, $theme);
+            $aiData = callGeminiApi($prompt);
             if (!isset($aiData['error'])) {
                 $initialData = array_replace_recursive($initialData, $aiData);
             }
@@ -91,9 +95,12 @@ if (isset($_POST['regenerate_id'])) {
     if ($uni && $theme && !empty($GEMINI_API_KEY)) {
         $currentData = json_decode($uni['data'], true) ?: [];
         $name        = $uni['name'];
+        $menu        = $currentData['_menu'] ?? 'menu1';
 
-        $prompt  = buildGeminiPrompt($name, $region, $theme);
-        $aiData  = callGeminiApi($prompt);
+        $prompt = $menu === 'menu2'
+            ? buildGeminiPromptMenu2($name, $region, $theme)
+            : buildGeminiPrompt($name, $region, $theme);
+        $aiData = callGeminiApi($prompt);
 
         if (isset($aiData['error'])) {
             $_SESSION['flash_msg'] = "⚠️ AI生成エラー: " . $aiData['error'];
@@ -126,7 +133,10 @@ $universities = $stmt->fetchAll();
 function calcProgress($jsonData) {
     $data = json_decode($jsonData, true);
     if (!$data || !isset($data['fields'])) return 0;
-    $keys = ['s11_daigakuname','s11_gakucho','s12_jisshisyutai','s12_jigyomei','s12_point','s12_sogaku','s12_hojokinn','s13_iinkaime','s2_sangyo','s2_daigaku'];
+    $menu = $data['_menu'] ?? 'menu1';
+    $keys = $menu === 'menu2'
+        ? ['s21_daigakuname','s21_gakucho','s22_jisshisyutai','s22_jigyomei','s22_point','s22_sogaku','s22_hojokinn','s23_taisei','s23_kigyorenkei','s23_program']
+        : ['s11_daigakuname','s11_gakucho','s12_jisshisyutai','s12_jigyomei','s12_point','s12_sogaku','s12_hojokinn','s13_iinkaime','s2_sangyo','s2_daigaku'];
     $filled = 0;
     foreach ($keys as $k) { if (!empty($data['fields'][$k])) $filled++; }
     return round(($filled / count($keys)) * 100);
@@ -217,6 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <form method="post" class="flex gap-3">
             <div class="flex-1 flex flex-col gap-2">
                 <input type="text" name="create_name" class="border rounded px-4 py-2" placeholder="大学名を入力（例：○○大学）" required>
+                <select name="create_menu" class="border rounded px-4 py-2 text-sm bg-white">
+                    <option value="menu1">メニュー①　地方創生（産学連携リ・スキリング）</option>
+                    <option value="menu2">メニュー②　産業成長（産学連携リ・スキリング）</option>
+                </select>
                 <input type="text" name="create_region" class="border rounded px-4 py-2 text-sm" placeholder="地域（任意） 例：北海道夕張市、沖縄県離島エリア">
                 <input type="text" name="create_theme" class="border rounded px-4 py-2 text-sm" placeholder="事業テーマ（任意） 例：地域医療を支えるVR看護教育">
                 <p class="text-xs text-gray-500">※テーマを入力すると、AIがジョリーグッドの事例を元に申請書の下書きを自動生成します（約10秒かかります）。</p>
@@ -235,15 +249,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($universities as $uni): 
+                <?php foreach ($universities as $uni):
                     $formUrl = $baseUrl . "/index.php?id=" . $uni['id'];
                     $prog = calcProgress($uni['data']);
                     $uData = json_decode($uni['data'], true);
                     $uTheme = $uData['_theme'] ?? '';
                     $uRegion = $uData['_region'] ?? '';
+                    $uMenu = $uData['_menu'] ?? 'menu1';
+                    $menuLabel = $uMenu === 'menu2' ? ['②産業成長','bg-orange-100 text-orange-700'] : ['①地方創生','bg-blue-100 text-blue-700'];
                 ?>
                 <tr class="border-b">
-                    <td class="p-4 font-bold"><?php echo htmlspecialchars($uni['name']); ?></td>
+                    <td class="p-4">
+                        <div class="font-bold"><?php echo htmlspecialchars($uni['name']); ?></div>
+                        <span class="text-xs px-2 py-0.5 rounded font-bold <?= $menuLabel[1] ?>"><?= $menuLabel[0] ?></span>
+                    </td>
                     <td class="p-4">
                         <div class="flex items-center gap-2">
                             <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">

@@ -14,6 +14,7 @@ $input  = json_decode(file_get_contents('php://input'), true);
 $theme  = trim($input['theme']  ?? '');
 $region = trim($input['region'] ?? '');
 $name   = trim($input['name']   ?? '');
+$menu   = trim($input['menu']   ?? 'menu1');
 
 if (!$theme) {
     http_response_code(400);
@@ -21,7 +22,9 @@ if (!$theme) {
     exit;
 }
 
-$prompt = buildGeminiPrompt($name, $region, $theme);
+$prompt = $menu === 'menu2'
+    ? buildGeminiPromptMenu2($name, $region, $theme)
+    : buildGeminiPrompt($name, $region, $theme);
 $data   = callGeminiApi($prompt);
 
 echo json_encode($data, JSON_UNESCAPED_UNICODE);
