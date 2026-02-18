@@ -59,6 +59,7 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
         <h1 class="text-base font-bold" id="formHeader">○○大学　入力フォーム</h1>
       </div>
       <div class="flex gap-2 flex-wrap">
+        <button onclick="openAiModal()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-2 rounded font-bold flex items-center gap-1"><span>🤖</span> AIで提案作成</button>
         <button onclick="saveData()" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 rounded font-bold">💾 保存</button>
         <button onclick="showOutput()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-2 rounded font-bold">📄 申請様式を出力</button>
         <button onclick="exportJSON()" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded font-bold">📥 JSONで保存</button>
@@ -85,6 +86,25 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
     </div>
   </div>
 
+  <!-- AI生成モーダル -->
+  <div id="aiModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+      <h3 class="text-lg font-bold text-purple-900 mb-2">🤖 AIで提案・見積もりを自動作成</h3>
+      <p class="text-xs text-gray-500 mb-4">テーマを入力すると、ジョリーグッドの事例を元に申請書の下書きと予算案を生成します。<br><span class="text-red-500 font-bold">※現在の入力内容は上書きされます。</span></p>
+      
+      <label class="block text-sm font-bold text-gray-700 mb-1">地域（任意）</label>
+      <input type="text" id="aiRegion" class="w-full border rounded px-3 py-2 text-sm mb-3" placeholder="例：北海道夕張市">
+      
+      <label class="block text-sm font-bold text-gray-700 mb-1">事業テーマ</label>
+      <input type="text" id="aiTheme" class="w-full border rounded px-3 py-2 text-sm mb-4" placeholder="例：地域医療を支えるVR看護教育">
+      
+      <div class="flex gap-2">
+        <button onclick="runAiGenerate()" id="aiGenBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded">生成する</button>
+        <button onclick="document.getElementById('aiModal').classList.add('hidden')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
   <!-- フォーム本体 -->
   <div class="max-w-6xl mx-auto px-4 pb-10">
 
@@ -92,10 +112,6 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
     <div id="s11" class="form-section active bg-white rounded-b rounded-r shadow p-6">
       <h2 class="text-base font-bold text-blue-900 border-b-2 border-blue-900 pb-2 mb-4">様式１-１　企画提案書提出状</h2>
       <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-bold text-gray-700 mb-1">文書番号 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label>
-          <input type="text" id="s11_bunshobango" class="w-full border rounded px-3 py-2 text-sm" placeholder="例：第〇号">
-        </div>
         <div>
           <label class="block text-sm font-bold text-gray-700 mb-1">提出年月日 <span class="badge-uni px-1 rounded text-xs">🎓 大学</span></label>
           <input type="date" id="s11_date" class="w-full border rounded px-3 py-2 text-sm">
@@ -503,7 +519,7 @@ function updateCounter(el, id) {
 // SAVE / LOAD
 // ================================================================
 const FIELD_IDS = [
-  's11_bunshobango','s11_date','s11_daigakuname','s11_gakucho',
+  's11_date','s11_daigakuname','s11_gakucho',
   's12_jisshisyutai','s12_jigyosha_furi','s12_jigyosha_name','s12_jigyosha_shoku',
   's12_shinseisha_furi','s12_shinseisha_name','s12_shinseisha_shoku',
   's12_sekininsha_furi','s12_sekininsha_name','s12_sekininsha_shoku',
@@ -536,7 +552,9 @@ function gatherData() {
       naiyou: document.getElementById(`${row.id}_naiyou`)?.value||'',
     };
   });
-  return { fields, programs: JSON.parse(JSON.stringify(programs)), committee: JSON.parse(JSON.stringify(committee)), keihi, _uni: currentUniName };
+  const theme = document.getElementById('aiTheme')?.value || '';
+  const region = document.getElementById('aiRegion')?.value || '';
+  return { fields, programs: JSON.parse(JSON.stringify(programs)), committee: JSON.parse(JSON.stringify(committee)), keihi, _uni: currentUniName, _theme: theme, _region: region };
 }
 
 async function saveData() {
@@ -598,6 +616,9 @@ function applyData(data) {
     });
     updateKeihiTotal();
   }
+  if (data._theme) document.getElementById('aiTheme').value = data._theme;
+  if (data._region) document.getElementById('aiRegion').value = data._region;
+
   const el6 = document.getElementById('s12_point');
   if(el6) updateCounter(el6,'counter6');
 }
@@ -612,6 +633,61 @@ function exportJSON() {
   a.href = URL.createObjectURL(blob);
   a.download = `koboform_${currentUniName||'data'}_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+}
+
+function openAiModal() {
+  document.getElementById('aiModal').classList.remove('hidden');
+  document.getElementById('aiTheme').focus();
+}
+
+async function runAiGenerate() {
+  const theme = document.getElementById('aiTheme').value.trim();
+  const region = document.getElementById('aiRegion').value.trim();
+  if(!theme) { alert('テーマを入力してください'); return; }
+
+  const btn = document.getElementById('aiGenBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中... (約10秒)';
+
+  try {
+    const res = await fetch('ai_generate.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ theme, region, name: currentUniName })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    
+    // データを反映
+    if(data.fields) {
+      Object.keys(data.fields).forEach(k => {
+        const el = document.getElementById(k);
+        if(el) el.value = data.fields[k];
+      });
+    }
+    if(data.programs) { programs = data.programs; buildProgramTable(); }
+    if(data.keihi) {
+      Object.keys(data.keihi).forEach(k => {
+        const row = data.keihi[k];
+        const h=document.getElementById(`${k}_hojo`), f=document.getElementById(`${k}_futan`), n=document.getElementById(`${k}_naiyou`);
+        if(h) h.value=row.hojo; if(f) f.value=row.futan; if(n) n.value=row.naiyou;
+      });
+      updateKeihiTotal();
+    }
+    // 文字カウンター更新
+    const el6 = document.getElementById('s12_point');
+    if(el6) updateCounter(el6,'counter6');
+
+    document.getElementById('aiModal').classList.add('hidden');
+    showToast('AIによる生成が完了しました ✨');
+    saveData();
+  } catch(e) {
+    alert('エラー: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 function importData() { document.getElementById('importFile').click(); }
@@ -648,7 +724,6 @@ function showOutput() {
   // 様式1-1
   html += `<div class="shoshiki-box print-page">
     <div class="shoshiki-title">様式１-１　企画提案書提出状</div>
-    ${row('文書番号', v('s11_bunshobango'))}
     ${row('提出年月日', v('s11_date'))}
     ${row('大学等名', v('s11_daigakuname'))}
     ${row('学長等氏名', v('s11_gakucho'))}

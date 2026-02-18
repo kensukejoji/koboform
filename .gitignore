@@ -3,3 +3,4 @@
 R7Reskiling/
 *.mov
 node_modules/
+db_config.php
