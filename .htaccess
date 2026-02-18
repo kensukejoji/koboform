@@ -1,0 +1,16 @@
+# 1. ディレクトリ一覧の表示を禁止
+Options -Indexes
+
+# 2. インデックスファイルの優先順位設定（index.phpを優先）
+DirectoryIndex index.php index.html
+
+# 3. HTTPS への強制リダイレクト
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+# 4. アクセス許可設定
+Order Allow,Deny
+Allow from all

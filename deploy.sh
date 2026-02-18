@@ -28,6 +28,9 @@ RSYNC_OPTS=(
   --exclude='deploy.sh'
   --exclude='node_modules/'
   --exclude='*.mov'
+  --exclude='data/'
+  --exclude='index.html'
+  --exclude='setup_db.php'
   --exclude='*.pdf'
 )
 

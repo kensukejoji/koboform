@@ -1,3 +1,12 @@
+<?php
+// index.php - 大学入力フォーム
+$id = $_GET['id'] ?? '';
+if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
+    // IDがない場合は管理者画面へのリンクを表示（または404）
+    echo '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h1>無効なURLです</h1><p>正しいURLにアクセスしてください。</p><p><a href="admin.php">管理者ログインはこちら</a></p></div>';
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -39,65 +48,8 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-<!-- ===================== LANDING PAGE ===================== -->
-<div id="landingPage">
-  <header class="bg-blue-900 text-white px-6 py-5">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-xs text-blue-300">令和7年度補正予算</p>
-      <h1 class="text-2xl font-bold mt-1">産学連携リ・スキリング・エコシステム構築事業</h1>
-      <p class="text-sm text-blue-200 mt-1">メニュー①「地方創生」申請書作成ツール　　提供：株式会社ジョリーグッド</p>
-    </div>
-  </header>
-
-  <div class="max-w-4xl mx-auto px-4 py-8">
-    <!-- 使い方説明 -->
-    <div class="bg-white rounded-xl shadow p-6 mb-6 border-l-4 border-blue-600">
-      <h2 class="text-base font-bold text-blue-900 mb-3">📋 このツールの使い方</h2>
-      <ol class="text-sm text-gray-700 space-y-1 list-decimal list-inside">
-        <li>「新規作成」ボタンから大学名を入力して開始してください</li>
-        <li>各様式の入力欄に必要事項を記入します（途中で保存可能）</li>
-        <li>入力完了後「申請様式を出力」で印刷・PDF保存できます</li>
-        <li>過去の入力データはこのページから再編集できます</li>
-      </ol>
-      <div class="mt-3 flex gap-3 text-xs">
-        <span class="badge-uni px-2 py-1 rounded">🎓 大学側が記入する項目</span>
-        <span class="badge-jg px-2 py-1 rounded">🏢 JollyGoodが記入する項目</span>
-        <span class="badge-both px-2 py-1 rounded">🤝 共同で記入する項目</span>
-      </div>
-    </div>
-
-    <!-- 新規作成ボタン -->
-    <div class="flex gap-3 mb-6">
-      <button onclick="showNewModal()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold px-6 py-3 rounded-lg text-sm shadow">
-        ＋ 新規作成（大学を登録）
-      </button>
-      <button onclick="importData()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold px-5 py-3 rounded-lg text-sm shadow">
-        📥 JSONファイルから読込
-      </button>
-      <input type="file" id="importFile" accept=".json" class="hidden" onchange="loadImportFile(event)">
-    </div>
-
-    <!-- 大学一覧 -->
-    <div id="uniList"></div>
-  </div>
-</div>
-
-<!-- 新規登録モーダル -->
-<div id="newModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md mx-4">
-    <h3 class="text-lg font-bold text-blue-900 mb-4">大学を新規登録</h3>
-    <label class="block text-sm font-bold text-gray-700 mb-2">大学名（正式名称）</label>
-    <input type="text" id="newUniName" class="w-full border-2 rounded-lg px-4 py-3 text-base mb-1" placeholder="例：○○大学" autofocus>
-    <p class="text-xs text-gray-500 mb-4">入力した大学名でデータが管理されます</p>
-    <div class="flex gap-3">
-      <button onclick="createUni()" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg">作成して入力開始</button>
-      <button onclick="closeNewModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-lg">キャンセル</button>
-    </div>
-  </div>
-</div>
-
 <!-- ===================== FORM PAGE ===================== -->
-<div id="formPage" class="hidden">
+<div id="formPage">
 
   <!-- ヘッダー -->
   <header class="bg-blue-900 text-white px-4 py-3 no-print">
@@ -107,7 +59,6 @@
         <h1 class="text-base font-bold" id="formHeader">○○大学　入力フォーム</h1>
       </div>
       <div class="flex gap-2 flex-wrap">
-        <button onclick="goToLanding()" class="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-2 rounded font-bold">← 大学一覧</button>
         <button onclick="saveData()" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 rounded font-bold">💾 保存</button>
         <button onclick="showOutput()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-2 rounded font-bold">📄 申請様式を出力</button>
         <button onclick="exportJSON()" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded font-bold">📥 JSONで保存</button>
@@ -426,8 +377,8 @@
 // ================================================================
 // STATE
 // ================================================================
-const UNI_LIST_KEY = 'koboform_unis_v2';
-let currentUni = null;
+const UNI_ID = "<?php echo $id; ?>";
+let currentUniName = "";
 
 const keihiRows = [
   {cat:'物品費', sub:'①設備備品費', id:'kb1'},
@@ -451,121 +402,11 @@ document.addEventListener('DOMContentLoaded', () => {
   buildKeihiTable();
   buildCommitteeTable();
   buildProgramTable();
-  renderLanding();
-  // Enterキーでモーダル確定
-  document.getElementById('newUniName').addEventListener('keydown', e => { if(e.key==='Enter') createUni(); });
+  loadData(); // サーバーからロード
+  setupAutoSave();
 });
 
 // ================================================================
-// LANDING
-// ================================================================
-function getUniList() {
-  try { return JSON.parse(localStorage.getItem(UNI_LIST_KEY)) || []; } catch{ return []; }
-}
-function saveUniList(list) {
-  localStorage.setItem(UNI_LIST_KEY, JSON.stringify(list));
-}
-function getUniDataKey(name) { return `koboform_data_v2_${name}`; }
-
-function renderLanding() {
-  const list = getUniList();
-  const el = document.getElementById('uniList');
-  if (!list.length) {
-    el.innerHTML = `<div class="bg-white rounded-xl shadow p-8 text-center text-gray-400">
-      <p class="text-4xl mb-3">🏫</p>
-      <p class="text-sm">まだ登録された大学はありません。「新規作成」から始めてください。</p>
-    </div>`;
-    return;
-  }
-  el.innerHTML = `
-    <h3 class="text-sm font-bold text-gray-600 mb-3">登録済みの大学一覧（${list.length}件）</h3>
-    <div class="space-y-3">
-      ${list.map(uni => {
-        const data = getUniData(uni);
-        const updated = data._updated ? new Date(data._updated).toLocaleString('ja-JP') : '未保存';
-        const progress = calcProgress(data);
-        return `
-        <div class="bg-white rounded-xl shadow p-4 flex items-center justify-between gap-4">
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-gray-800 truncate">🎓 ${uni}</p>
-            <p class="text-xs text-gray-400 mt-0.5">最終更新：${updated}</p>
-            <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden w-48">
-              <div class="h-2 bg-blue-500 rounded-full transition-all" style="width:${progress}%"></div>
-            </div>
-            <p class="text-xs text-gray-400 mt-0.5">入力進捗：${progress}%</p>
-          </div>
-          <div class="flex gap-2 flex-shrink-0">
-            <button onclick="openUni('${escHtml(uni)}')" class="bg-blue-700 hover:bg-blue-800 text-white text-xs px-4 py-2 rounded font-bold">編集</button>
-            <button onclick="outputUni('${escHtml(uni)}')" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-4 py-2 rounded font-bold">出力</button>
-            <button onclick="deleteUni('${escHtml(uni)}')" class="bg-red-100 hover:bg-red-200 text-red-600 text-xs px-3 py-2 rounded font-bold">削除</button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-
-function calcProgress(data) {
-  if (!data || !data.fields) return 0;
-  const keys = ['s11_daigakuname','s11_gakucho','s12_jisshisyutai','s12_jigyomei','s12_point',
-    's12_sogaku','s12_hojokinn','s13_iinkaime','s2_sangyo','s2_daigaku'];
-  const filled = keys.filter(k => data.fields[k] && String(data.fields[k]).trim()).length;
-  return Math.round(filled / keys.length * 100);
-}
-
-function escHtml(s) { return s.replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
-
-function showNewModal() {
-  document.getElementById('newModal').classList.remove('hidden');
-  document.getElementById('newUniName').value = '';
-  setTimeout(() => document.getElementById('newUniName').focus(), 100);
-}
-function closeNewModal() { document.getElementById('newModal').classList.add('hidden'); }
-
-function createUni() {
-  const name = document.getElementById('newUniName').value.trim();
-  if (!name) { alert('大学名を入力してください'); return; }
-  const list = getUniList();
-  if (list.includes(name)) { alert('同名の大学がすでに登録されています'); return; }
-  list.push(name);
-  saveUniList(list);
-  closeNewModal();
-  openUni(name);
-}
-
-function openUni(name) {
-  currentUni = name;
-  loadData();
-  document.getElementById('formHeader').textContent = `${name}　入力フォーム`;
-  document.getElementById('landingPage').style.display = 'none';
-  document.getElementById('formPage').classList.remove('hidden');
-  document.getElementById('outputPage').classList.add('hidden');
-  showTab('s11');
-  setupAutoSave();
-}
-
-function outputUni(name) {
-  currentUni = name;
-  loadData();
-  showOutput();
-}
-
-function deleteUni(name) {
-  if (!confirm(`「${name}」のデータを削除しますか？この操作は取り消せません。`)) return;
-  const list = getUniList().filter(u => u !== name);
-  saveUniList(list);
-  localStorage.removeItem(getUniDataKey(name));
-  renderLanding();
-}
-
-function goToLanding() {
-  saveData();
-  currentUni = null;
-  document.getElementById('formPage').classList.add('hidden');
-  document.getElementById('outputPage').classList.add('hidden');
-  document.getElementById('landingPage').style.display = 'block';
-  renderLanding();
-}
-
 function goToForm() {
   document.getElementById('outputPage').classList.add('hidden');
   document.getElementById('formPage').classList.remove('hidden');
@@ -695,14 +536,27 @@ function gatherData() {
       naiyou: document.getElementById(`${row.id}_naiyou`)?.value||'',
     };
   });
-  return { fields, programs: JSON.parse(JSON.stringify(programs)), committee: JSON.parse(JSON.stringify(committee)), keihi, _updated: new Date().toISOString(), _uni: currentUni };
+  return { fields, programs: JSON.parse(JSON.stringify(programs)), committee: JSON.parse(JSON.stringify(committee)), keihi, _uni: currentUniName };
 }
 
-function saveData() {
-  if (!currentUni) return;
+async function saveData() {
   const data = gatherData();
-  localStorage.setItem(getUniDataKey(currentUni), JSON.stringify(data));
-  showToast('保存しました ✅');
+  
+  try {
+    const res = await fetch(`api.php?action=save&id=${UNI_ID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    if(res.ok) {
+      showToast('保存しました ✅');
+    } else {
+      showToast('保存に失敗しました ❌');
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('通信エラー ❌');
+  }
 }
 
 let autoSaveTimer = null;
@@ -711,9 +565,21 @@ function setupAutoSave() {
   autoSaveTimer = setInterval(saveData, 30000);
 }
 
-function loadData() {
-  if (!currentUni) return;
-  const data = getUniData(currentUni);
+async function loadData() {
+  try {
+    const res = await fetch(`api.php?action=get&id=${UNI_ID}`);
+    if(!res.ok) throw new Error('Load failed');
+    const data = await res.json();
+    applyData(data);
+  } catch(e) {
+    alert('データの読み込みに失敗しました');
+  }
+}
+
+function applyData(data) {
+  currentUniName = data._uni || '';
+  document.getElementById('formHeader').textContent = `${currentUniName}　入力フォーム`;
+
   programs = data.programs || [{name:'',target:'',teiin:'',ryokin:'',naiyou:''}];
   committee = data.committee || Array.from({length:10},()=>({name:'',shoku:'',yakuwari:''}));
   buildProgramTable();
@@ -744,7 +610,7 @@ function exportJSON() {
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `koboform_${currentUni||'data'}_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `koboform_${currentUniName||'data'}_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
 }
 
@@ -756,12 +622,8 @@ function loadImportFile(e) {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      const name = data._uni || file.name.replace(/\.json$/,'');
-      const list = getUniList();
-      if (!list.includes(name)) { list.push(name); saveUniList(list); }
-      localStorage.setItem(getUniDataKey(name), JSON.stringify(data));
-      showToast(`「${name}」のデータを読み込みました`);
-      renderLanding();
+      applyData(data);
+      showToast(`データを読み込みました`);
     } catch { alert('JSONファイルの読み込みに失敗しました'); }
   };
   reader.readAsText(file);
@@ -775,7 +637,7 @@ function showOutput() {
   saveData();
   const data = gatherData();
   const f = data.fields;
-  document.getElementById('outputHeader').textContent = `${currentUni||''}　申請書 出力プレビュー`;
+  document.getElementById('outputHeader').textContent = `${currentUniName||''}　申請書 出力プレビュー`;
 
   const v = id => f[id] || '';
   const row = (label, val) => `<div class="shoshiki-row"><div class="shoshiki-label">${label}</div><div class="shoshiki-val">${val||'&nbsp;'}</div></div>`;
@@ -895,7 +757,6 @@ function showOutput() {
 
   document.getElementById('printOutput').innerHTML = html;
   document.getElementById('formPage').classList.add('hidden');
-  document.getElementById('landingPage').style.display = 'none';
   document.getElementById('outputPage').classList.remove('hidden');
 }
 
