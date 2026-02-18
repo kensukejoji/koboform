@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+R7Reskiling/
+*.mov
+node_modules/
