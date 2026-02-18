@@ -10,9 +10,9 @@ set -e  # エラーが出たら即停止
 XSERVER_USER="jollygood25s"               # Xserverのユーザー名（サーバーID）
 XSERVER_SSH_HOST="sv16602.xserver.jp"     # SSH接続ホスト
 XSERVER_PORT=10022                        # XserverのSSHポート（固定）
-DEPLOY_DOMAIN="jollygoodplus.com"         # デプロイ先ドメイン
+DEPLOY_DOMAIN="lp.jollygoodplus.com"      # デプロイ先ドメイン
 # Xserver上の公開ディレクトリ（ドメインのpublic_html以下）
-REMOTE_DIR="/home/${XSERVER_USER}/${DEPLOY_DOMAIN}/public_html/koboform"
+REMOTE_DIR="/home/${XSERVER_USER}/jollygoodplus.com/public_html/${DEPLOY_DOMAIN}/koboform"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)" # このスクリプトのディレクトリ
 
 # アップロード対象（R7Reskiling等の大容量ファイルは除外）
