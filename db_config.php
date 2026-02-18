@@ -6,7 +6,7 @@ $db_user = 'jollygood25s_usr';
 $db_pass = 'TestPass123!';
 
 // Gemini APIキー
-$GEMINI_API_KEY = 'AIzaSyA5Avvn_L-ONzWBNNfgjSAnRFR1XmdO7oA';
+$GEMINI_API_KEY = 'AIzaSyDddaIqL25HqJLUtvzTXuziqx6LTIXTTo8';
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass, [
