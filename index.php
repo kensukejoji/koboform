@@ -293,7 +293,7 @@ if (!$id || !preg_match('/^[a-zA-Z0-9-]+$/', $id)) {
         <div class="border-l-4 border-green-500 pl-4">
           <p class="text-sm font-bold text-gray-700 mb-2">【P4】教育プログラム一覧 <span class="badge-both px-1 rounded text-xs">🤝 共同</span></p>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse"><thead><tr class="bg-green-800 text-white"><th class="border px-2 py-1">プログラム名</th><th class="border px-2 py-1 w-24">対象者</th><th class="border px-2 py-1 w-16">定員</th><th class="border px-2 py-1 w-20">受講料（円）</th><th class="border px-2 py-1">目的・内容</th><th class="border px-2 py-1 w-8">削除</th></tr></thead><tbody id="programTbody"></tbody></table>
+            <table class="w-full text-sm border-collapse"><thead><tr class="bg-green-800 text-white"><th class="border px-2 py-1 w-36">プログラム名</th><th class="border px-2 py-1 w-24">対象者</th><th class="border px-2 py-1 w-14">定員</th><th class="border px-2 py-1 w-32">受講料（円）</th><th class="border px-2 py-1">目的・内容</th><th class="border px-2 py-1 w-8">削除</th></tr></thead><tbody id="programTbody"></tbody></table>
           </div>
           <button onclick="addProgramRow()" class="mt-2 bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700">＋ プログラムを追加</button>
         </div>
@@ -790,7 +790,7 @@ function showOutput() {
       <div class="mt-1"><span class="font-bold text-xs">取組事項：</span>${v('s2_platform_jiko')}</div>
     </div></div>
     <div class="shoshiki-row"><div class="shoshiki-label">[P4] 教育プログラム一覧</div><div class="shoshiki-val" style="flex:1">
-      <table class="shoshiki-table w-full"><tr><th>プログラム名</th><th>対象者</th><th>定員</th><th>受講料</th><th>目的・内容</th></tr>
+      <table class="shoshiki-table w-full"><tr><th style="width:18%">プログラム名</th><th style="width:14%">対象者</th><th style="width:7%">定員</th><th style="width:14%">受講料</th><th>目的・内容</th></tr>
       ${data.programs.map(p=>`<tr><td>${p.name||''}</td><td>${p.target||''}</td><td>${p.teiin||''}名</td><td>¥${p.ryokin||''}</td><td>${p.naiyou||''}</td></tr>`).join('')}
       </table>
     </div></div>
