@@ -10,9 +10,10 @@ set -e  # エラーが出たら即停止
 XSERVER_USER="jollygood25s"               # Xserverのユーザー名（サーバーID）
 XSERVER_SSH_HOST="sv16602.xserver.jp"     # SSH接続ホスト
 XSERVER_PORT=10022                        # XserverのSSHポート（固定）
-DEPLOY_DOMAIN="lp.jollygoodplus.com"      # デプロイ先ドメイン
+DEPLOY_DOMAIN="form.jollygoodplus.com"    # デプロイ先ドメイン
+DEPLOY_SUBDIR="reskiling2603"             # サブディレクトリ
 # Xserver上の公開ディレクトリ（ドメインのpublic_html以下）
-REMOTE_DIR="/home/${XSERVER_USER}/jollygoodplus.com/public_html/${DEPLOY_DOMAIN}/koboform"
+REMOTE_DIR="/home/${XSERVER_USER}/jollygoodplus.com/public_html/${DEPLOY_DOMAIN}/${DEPLOY_SUBDIR}"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)" # このスクリプトのディレクトリ
 
 # アップロード対象（R7Reskiling等の大容量ファイルは除外）
@@ -59,5 +60,5 @@ rsync "${RSYNC_OPTS[@]}" \
 
 echo ""
 echo "✅ デプロイ完了！"
-echo "   URL: https://${DEPLOY_DOMAIN}/koboform/"
+echo "   URL: https://${DEPLOY_DOMAIN}/${DEPLOY_SUBDIR}/"
 echo ""
